@@ -1,17 +1,23 @@
 from flask import Flask, request, abort
 
-from linebot import(
-    LinebotApi, WebhookHandler
+from linebot import (
+    LineBotApi, WebhookHandler
 )
-from linebot.exceptions import(
+from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
 )
+
+import urllib.request
 import os
+import json
+import scrape as sc
+
 
 app = Flask(__name__)
+
 
 #環境変数取得
 YOUR_CHANNEL_ACCESS_TOKEN = os.environ["YOUR_CHANNEL_ACCESS_TOKEN"]
@@ -19,6 +25,7 @@ YOUR_CHANNEL_SECRET = os.environ["YOUR_CHANNEL_SECRET"]
 
 line_bot_api = LineBotApi(YOUR_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(YOUR_CHANNEL_SECRET)
+
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -38,11 +45,21 @@ def callback():
     return 'OK'
 
 
-    @handler.add(MessageEvent, message=TextMessage)
+# メッセージリプライ
+@handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+
+    # ユーザからの検索ワードを取得
+    word = event.message.text
+
+    # 記事取得関数を呼び出し
+    result = sc.getNews(word)
+
+# 応答メッセージ（記事検索結果）を送信
     line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text))
+    event.reply_token,
+    TextSendMessage(text=result)
+    )
 
 
 if __name__ == "__main__":
